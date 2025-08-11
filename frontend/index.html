@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Notes App</title>
+</head>
+<body>
+  <h1>Notes</h1>
+  <input id="note" placeholder="Type note" />
+  <button onclick="addNote()">Add</button>
+  <ul id="list"></ul>
+
+  <script>
+    const API = "http://localhost:3000/api/notes";
+    async function loadNotes() {
+      const res = await fetch(API);
+      const notes = await res.json();
+      document.getElementById("list").innerHTML =
+        notes.map(n => `<li>${n.text}</li>`).join("");
+    }
+    async function addNote() {
+      const text = document.getElementById("note").value;
+      await fetch(API, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text })
+      });
+      document.getElementById("note").value = "";
+      loadNotes();
+    }
+    loadNotes();
+  </script>
+</body>
+</html>
