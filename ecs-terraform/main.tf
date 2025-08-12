@@ -32,7 +32,7 @@ resource "aws_route_table_association" "public_assoc" {
 
 data "aws_availability_zones" "available" {}
 
-# --- Security Group ---
+# --- Security Group for ECS tasks ---
 resource "aws_security_group" "ecs_sg" {
   name        = "ecs-fargate-sg"
   description = "Allow HTTP and backend port"
@@ -64,7 +64,31 @@ resource "aws_security_group" "ecs_sg" {
   tags = { Name = "ecs-fargate-sg" }
 }
 
-# --- IAM: ECS Task Execution Role (for pulling image, logging) ---
+# --- Security Group for ALB ---
+resource "aws_security_group" "alb_sg" {
+  name        = "alb-sg"
+  description = "Allow HTTP inbound traffic to ALB"
+  vpc_id      = aws_vpc.this.id
+
+  ingress {
+    description = "HTTP from anywhere"
+    from_port   = 80
+    to_port     = 80
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  tags = { Name = "alb-sg" }
+}
+
+# --- IAM: ECS Task Execution Role ---
 resource "aws_iam_role" "ecs_task_execution" {
   name = "ecsTaskExecutionRole-simple"
   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution_assume_role.json
@@ -163,6 +187,43 @@ resource "aws_cloudwatch_log_group" "frontend" {
   retention_in_days = 7
 }
 
+# --- Application Load Balancer ---
+resource "aws_lb" "app_alb" {
+  name               = "ecs-fargate-alb"
+  internal           = false
+  load_balancer_type = "application"
+  security_groups    = [aws_security_group.alb_sg.id]
+  subnets            = [aws_subnet.public.id]
+}
+
+resource "aws_lb_target_group" "frontend_tg" {
+  name     = "frontend-tg"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = aws_vpc.this.id
+
+  health_check {
+    path                = "/"
+    protocol            = "HTTP"
+    matcher             = "200-399"
+    interval            = 30
+    timeout             = 5
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+  }
+}
+
+resource "aws_lb_listener" "http" {
+  load_balancer_arn = aws_lb.app_alb.arn
+  port              = 80
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.frontend_tg.arn
+  }
+}
+
 # --- ECS Services (Fargate) ---
 resource "aws_ecs_service" "backend" {
   name            = "backend-service"
@@ -195,7 +256,37 @@ resource "aws_ecs_service" "frontend" {
     assign_public_ip = true
   }
 
+  load_balancer {
+    target_group_arn = aws_lb_target_group.frontend_tg.arn
+    container_name   = "frontend"
+    container_port   = 80
+  }
+
   deployment_minimum_healthy_percent = 0
   deployment_maximum_percent         = 100
-  depends_on = [aws_ecs_task_definition.frontend]
+  depends_on = [
+    aws_ecs_task_definition.frontend,
+    aws_lb_listener.http
+  ]
+}
+
+# --- Outputs ---
+output "ecs_cluster_name" {
+  value = aws_ecs_cluster.this.name
+}
+
+output "frontend_service_arn" {
+  value = aws_ecs_service.frontend.arn
+}
+
+output "backend_service_arn" {
+  value = aws_ecs_service.backend.arn
+}
+
+output "public_subnet_id" {
+  value = aws_subnet.public.id
+}
+
+output "alb_dns_name" {
+  value = aws_lb.app_alb.dns_name
 }
