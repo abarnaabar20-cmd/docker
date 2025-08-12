@@ -46,12 +46,12 @@ jobs:
 
       - name: Terraform Init
         run: terraform init
-        working-directory: ./2-TIER/ecs-terraform
+        working-directory: ./ecs-terraform
 
       - name: Terraform Plan
         run: terraform plan -out=tfplan
-        working-directory: ./2-TIER/ecs-terraform
+        working-directory: ./ecs-terraform
 
       - name: Terraform Apply
         run: terraform apply -auto-approve tfplan
-        working-directory: ./2-TIER/ecs-terraform
+        working-directory: ./ecs-terraform
