@@ -232,6 +232,7 @@ resource "aws_lb_target_group" "frontend_tg" {
   port     = 80
   protocol = "HTTP"
   vpc_id   = aws_vpc.this.id
+  target_type = "ip"
 
   health_check {
     path                = "/"
@@ -249,9 +250,10 @@ resource "aws_lb_target_group" "backend_tg" {
   port     = 3000
   protocol = "HTTP"
   vpc_id   = aws_vpc.this.id
+  target_type = "ip"
 
   health_check {
-    path                = "/health" # or actual health endpoint for backend
+    path                = "/api/notes" # or actual health endpoint for backend
     protocol            = "HTTP"
     matcher             = "200-399"
     interval            = 30
