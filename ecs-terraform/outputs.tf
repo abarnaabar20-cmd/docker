@@ -3,11 +3,11 @@ output "ecs_cluster_name" {
 }
 
 output "frontend_service_arn" {
-  value = aws_ecs_service.frontend.arn
+  value = aws_ecs_service.frontend.id
 }
 
 output "backend_service_arn" {
-  value = aws_ecs_service.backend.arn
+  value = aws_ecs_service.backend.id
 }
 
 output "public_subnet_id" {
