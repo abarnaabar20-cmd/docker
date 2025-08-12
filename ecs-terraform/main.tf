@@ -274,6 +274,17 @@ resource "aws_lb_listener" "http" {
   }
 }
 
+resource "aws_lb_listener" "backend" {
+  load_balancer_arn = aws_lb.app_alb.arn
+  port              = 3000
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.backend_tg.arn
+  }
+}
+
 # --- ECS Services (Fargate) ---
 
 resource "aws_ecs_service" "backend" {
