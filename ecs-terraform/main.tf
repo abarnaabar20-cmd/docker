@@ -228,10 +228,10 @@ resource "aws_lb" "app_alb" {
 }
 
 resource "aws_lb_target_group" "frontend_tg" {
-  name     = "frontend-tg"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.this.id
+  name        = "frontend-tg"
+  port        = 80
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.this.id
   target_type = "ip"
 
   health_check {
@@ -246,14 +246,14 @@ resource "aws_lb_target_group" "frontend_tg" {
 }
 
 resource "aws_lb_target_group" "backend_tg" {
-  name     = "backend-tg"
-  port     = 3000
-  protocol = "HTTP"
-  vpc_id   = aws_vpc.this.id
+  name        = "backend-tg"
+  port        = 3000
+  protocol    = "HTTP"
+  vpc_id      = aws_vpc.this.id
   target_type = "ip"
 
   health_check {
-    path                = "/api/notes" # or actual health endpoint for backend
+    path                = "/api/notes" # your backend health check path
     protocol            = "HTTP"
     matcher             = "200-399"
     interval            = 30
@@ -274,14 +274,19 @@ resource "aws_lb_listener" "http" {
   }
 }
 
-resource "aws_lb_listener" "backend" {
-  load_balancer_arn = aws_lb.app_alb.arn
-  port              = 3000
-  protocol          = "HTTP"
+resource "aws_lb_listener_rule" "backend_api" {
+  listener_arn = aws_lb_listener.http.arn
+  priority     = 100
 
-  default_action {
+  action {
     type             = "forward"
     target_group_arn = aws_lb_target_group.backend_tg.arn
+  }
+
+  condition {
+    path_pattern {
+      values = ["/api/*"]
+    }
   }
 }
 
@@ -308,9 +313,11 @@ resource "aws_ecs_service" "backend" {
 
   deployment_minimum_healthy_percent = 0
   deployment_maximum_percent         = 100
+
   depends_on = [
     aws_ecs_task_definition.backend,
-    aws_lb_listener.http
+    aws_lb_listener.http,
+    aws_lb_listener_rule.backend_api
   ]
 }
 
@@ -335,9 +342,11 @@ resource "aws_ecs_service" "frontend" {
 
   deployment_minimum_healthy_percent = 0
   deployment_maximum_percent         = 100
+
   depends_on = [
     aws_ecs_task_definition.frontend,
     aws_lb_listener.http
   ]
 }
+
 
