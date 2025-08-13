@@ -10,12 +10,12 @@ variable "aws_account_id" {
 
 variable "frontend_ecr_image" {
   type        = string
-  description = "Full ECR URI for frontend image (e.g. 123..dkr.ecr.region.amazonaws.com/frontend:latest)"
+  description = "771355239042.dkr.ecr.eu-north-1.amazonaws.com/frontend:latest"
 }
 
 variable "backend_ecr_image" {
   type        = string
-  description = "Full ECR URI for backend image (e.g. 123..dkr.ecr.region.amazonaws.com/backend:latest)"
+  description = "771355239042.dkr.ecr.eu-north-1.amazonaws.com/backend:latest"
 }
 
 variable "vpc_cidr" {
