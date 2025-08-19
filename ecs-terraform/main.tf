@@ -102,32 +102,26 @@ resource "aws_security_group" "alb_sg" {
 }
 
 # --- IAM: ECS Task Execution Role ---
-# Use data to get existing role if already created to avoid conflict
-
-data "aws_iam_role" "ecs_task_execution" {
+resource "aws_iam_role" "ecs_task_execution" {
   name = "ecsTaskExecutionRole-simple"
-  # If role doesn't exist, this will fail; alternative is to import or create with unique name
+  assume_role_policy = data.aws_iam_policy_document.ecs_task_execution_assume_role.json
 }
 
-# Alternatively, comment out the below resource if role exists:
- resource "aws_iam_role" "ecs_task_execution" {
-   name = "ecsTaskExecutionRole-simple"
-   assume_role_policy = data.aws_iam_policy_document.ecs_task_execution_assume_role.json
- }
- data "aws_iam_policy_document" "ecs_task_execution_assume_role" {
-   statement {
-     effect = "Allow"
-     principals {
-       type        = "Service"
-       identifiers = ["ecs-tasks.amazonaws.com"]
-     }
-     actions = ["sts:AssumeRole"]
-   }
- }
- resource "aws_iam_role_policy_attachment" "task_exec_attach" {
-   role       = aws_iam_role.ecs_task_execution.name
-   policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
- }
+data "aws_iam_policy_document" "ecs_task_execution_assume_role" {
+  statement {
+    effect = "Allow"
+    principals {
+      type        = "Service"
+      identifiers = ["ecs-tasks.amazonaws.com"]
+    }
+    actions = ["sts:AssumeRole"]
+  }
+}
+
+resource "aws_iam_role_policy_attachment" "task_exec_attach" {
+  role       = aws_iam_role.ecs_task_execution.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy"
+}
 
 # --- ECS Cluster ---
 resource "aws_ecs_cluster" "this" {
@@ -158,7 +152,7 @@ resource "aws_ecs_task_definition" "backend" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = data.aws_iam_role.ecs_task_execution.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([
     {
@@ -190,7 +184,7 @@ resource "aws_ecs_task_definition" "frontend" {
   network_mode             = "awsvpc"
   cpu                      = "256"
   memory                   = "512"
-  execution_role_arn       = data.aws_iam_role.ecs_task_execution.arn
+  execution_role_arn       = aws_iam_role.ecs_task_execution.arn
 
   container_definitions = jsonencode([
     {
@@ -348,5 +342,3 @@ resource "aws_ecs_service" "frontend" {
     aws_lb_listener.http
   ]
 }
-
-
