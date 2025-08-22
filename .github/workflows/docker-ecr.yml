@@ -24,12 +24,24 @@ jobs:
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
+      # Create backend ECR repository if it doesn't exist
+      - name: Create backend ECR repository if needed
+        run: |
+          aws ecr describe-repositories --repository-names backend || \
+          aws ecr create-repository --repository-name backend
+
       # Build and push backend
       - name: Build, tag, and push backend image
         run: |
           docker build -t backend ./backend
           docker tag backend:latest ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:latest
           docker push ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/backend:latest
+
+      # Create frontend ECR repository if it doesn't exist
+      - name: Create frontend ECR repository if needed
+        run: |
+          aws ecr describe-repositories --repository-names frontend || \
+          aws ecr create-repository --repository-name frontend
 
       # Build and push frontend
       - name: Build, tag, and push frontend image
