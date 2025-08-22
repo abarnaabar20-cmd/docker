@@ -1,21 +1,21 @@
 variable "aws_region" {
   type    = string
-  default = "us-east-1"
+  default = "eu-north-1"
 }
 
 variable "aws_account_id" {
   type    = string
-  default = "077405089182"   # change if needed
+  default = "649830721920"   # change if needed
 }
 
 variable "frontend_ecr_image" {
   type        = string
-  description = "077405089182.dkr.ecr.eu-north-1.amazonaws.com/frontend:latest"
+  description = "649830721920.dkr.ecr.eu-north-1.amazonaws.com/frontend:latest"
 }
 
 variable "backend_ecr_image" {
   type        = string
-  description = "077405089182.dkr.ecr.eu-north-1.amazonaws.com/backend:latest"
+  description = "649830721920.dkr.ecr.eu-north-1.amazonaws.com/backend:latest"
 }
 
 variable "vpc_cidr" {
